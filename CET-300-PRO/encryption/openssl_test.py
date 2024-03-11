@@ -1,27 +1,38 @@
-from OpenSSL import crypto
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
-# Encrypt and Decrypt Functions
-def encrypt(data, public_key):
-    return crypto.sign(public_key, data, 'sha256')
+# Generate an RSA key pair
+private_key = rsa.generate_private_key(
+    public_exponent=65537,
+    key_size=2048,
+    backend=default_backend()
+)
+public_key = private_key.public_key()
 
-def verify(data, signature, public_key):
-    try:
-        crypto.verify(public_key, signature, data, 'sha256')
-        print("Verification Successful: Data is intact and valid.")
-    except crypto.Error as e:
-        print("Verification Failed: Data is corrupted or signature is invalid.")
+# Data to sign
+data = b"my data to sign"
 
-# Main Code
-if __name__ == "__main__":
-    # Generate a key pair
-    key_pair = crypto.PKey()
-    key_pair.generate_key(crypto.TYPE_RSA, 2048)
+# Sign the data
+signature = private_key.sign(
+    data,
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
 
-    # Original data to encrypt
-    original_data = b"This is the data I want to encrypt"
+# Verify the signature
+public_key.verify(
+    signature,
+    data,
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
 
-    # Encrypt the data
-    signature = encrypt(original_data, key_pair)
-
-    # Verify the signature
-    verify(original_data, signature, key_pair)
+print("Signature valid.")
