@@ -24,7 +24,7 @@ signature = private_key.sign(
     hashes.SHA256()
 )
 
-# Verify the signature
+# Verify the signatures
 public_key.verify(
     signature,
     data,
